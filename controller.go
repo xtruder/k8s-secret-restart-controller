@@ -37,14 +37,14 @@ type controller struct {
 }
 
 func (c *controller) Run(stChan <-chan struct{}) {
-	config := &rest.Config{
-		Host:            c.cfg.host,
-		BearerToken:     c.cfg.bearer,
-		TLSClientConfig: rest.TLSClientConfig{Insecure: true},
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		fmt.Printf("error creating k8s client: %s\n", err.Error())
+		return
 	}
 
 	c.stCh = stChan
-	c.cs = kubernetes.NewForConfigOrDie(config)
+	c.cs =  kubernetes.NewForConfigOrDie(config)
 
 	go c.restartPods()
 	go c.monitorSecrets()
@@ -191,12 +191,6 @@ func newController(cfg config) *controller {
 		pendingPods: make([]string, 10),
 	}
 }
-func stringFromEnvOrPanic(key string) string {
-	if v, ok := os.LookupEnv(key); ok {
-		return v
-	}
-	panic(fmt.Errorf("missing %s environment variable", key))
-}
 
 func stringFromFileOrPanic(file string) string {
 	d, err := ioutil.ReadFile(file)
@@ -236,9 +230,7 @@ func find(arr []string, fv string) int {
 func main() {
 	ctrl := newController(config{
 		namespace:     stringFromFileOrPanic("/var/run/secrets/kubernetes.io/serviceaccount/namespace"),
-		host:          stringFromEnvOrPanic("KUBERNETES_SERVICE_HOST"),
 		resyncTimeout: 5 * time.Second,
-		bearer:        stringFromFileOrPanic("/var/run/secrets/kubernetes.io/serviceaccount/token"),
 	})
 
 	stCh := make(chan struct{})
