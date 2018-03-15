@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"log"
 	"time"
 
+	"github.com/golang/glog"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +33,8 @@ type Controller struct {
 
 // Run starts k8s-secret-restart controller main loop
 func (c *Controller) Run(stChan <-chan struct{}) {
+	glog.Info("starting controller")
+
 	c.stCh = stChan
 
 	go c.restartPods()
@@ -50,18 +52,18 @@ func (c *Controller) restartPods() {
 	for {
 		select {
 		case pod := <-c.processPods:
-			log.Printf("[INFO] restarting pod %s\n", pod.Name)
+			glog.Infof("restarting pod %s", pod.Name)
 
 			if err := c.cs.CoreV1().Pods(c.cfg.Namespace).Evict(&v1beta1.Eviction{ObjectMeta: v1.ObjectMeta{Name: pod.Name}}); err != nil {
 				switch err.Error() {
 				case errDisruptionBudget:
 					// If this pod cannot be restarted then it should be queued and restarted after a while
-					log.Printf("[INFO] cannot restart %s: disrupting budget", pod.Name)
+					glog.Infof("cannot restart %s: disrupting budget", pod.Name)
 					time.AfterFunc(5*time.Second, func() {
 						c.processPods <- pod
 					})
 				default:
-					log.Printf("[ERROR] error restarting pod: %s", err.Error())
+					glog.Errorf("error restarting pod: %s", err.Error())
 				}
 			}
 		default:
@@ -85,7 +87,7 @@ func (c *Controller) monitorSecrets() {
 
 			pods, err := c.cs.CoreV1().Pods(c.cfg.Namespace).List(v1.ListOptions{})
 			if err != nil {
-				log.Printf("[ERROR] error fetching pods: %s", err.Error())
+				glog.Errorf("error fetching pods: %s", err.Error())
 				return
 			}
 
@@ -107,7 +109,7 @@ func (c *Controller) monitorSecrets() {
 							// If the pod is running then restart it. If the pod is pending then store the event and process
 							// it once the state of the pod changes to running, then check if the secrets match. If they
 							// don't then restart it.
-							log.Printf("[INFO] pod %s:%s has secret %s", pod.Name, container.Name, env.Name)
+							glog.Infof("pod %s:%s has secret %s", pod.Name, container.Name, env.Name)
 
 							c.processPods <- pod
 						}
