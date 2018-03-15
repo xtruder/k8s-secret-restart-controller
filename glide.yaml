@@ -1,5 +1,0 @@
-package: gitlab.gatehub.net/gatehub/k8s-secrets-controller
-import:
-- package: k8s.io/client-go
-  version: v6.0.0
-- package: k8s.io/apimachinery
