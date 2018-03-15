@@ -1,4 +1,4 @@
 vendor
 telepresence.log
-controller
 .idea
+k8s-secret-restart-controller
