@@ -1,3 +1,4 @@
 telepresence.log
 .idea
+.vscode
 k8s-secret-restart-controller
