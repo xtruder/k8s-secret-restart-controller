@@ -16,3 +16,16 @@ proot -b $TELEPRESENCE_ROOT/var/run/secrets/:/var/run/secrets bash
 go build .
 ./k8s-secret-restart-controller
 ```
+
+**Creating example deployment with secret**
+
+```
+kubectl apply -f example/*
+```
+
+Now edit a secret and watch pods getting restarted
+
+```
+kubectl edit secret restart-on-secret-change
+kubectl get pods -w
+```
