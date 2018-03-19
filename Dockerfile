@@ -9,4 +9,4 @@ RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a .
 FROM alpine:3.7
 WORKDIR /bin
 COPY --from=0 /go/src/github.com/uroshercog/k8s-secret-restart-controller/k8s-secret-restart-controller k8s-secret-restart-controller
-CMD ["/bin/k8s-secret-restart-controller"]
+ENTRYPOINT ["/bin/k8s-secret-restart-controller"]
