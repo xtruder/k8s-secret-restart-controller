@@ -99,6 +99,8 @@ func (c *Controller) monitorSecrets() {
 					continue
 				}
 
+				restartPod := false
+
 				// If at least one of the containers is using the secret then restart the whole pod
 				for _, container := range pod.Spec.Containers {
 					for _, env := range container.Env {
@@ -106,14 +108,28 @@ func (c *Controller) monitorSecrets() {
 							// A container in this pod is using a secret that just got updated
 							// We can restart the pod
 
-							// If the pod is running then restart it. If the pod is pending then store the event and process
-							// it once the state of the pod changes to running, then check if the secrets match. If they
-							// don't then restart it.
-							glog.Infof("pod %s:%s has secret %s", pod.Name, container.Name, env.Name)
+							glog.Infof("pod %s:%s has secret %s in env", pod.Name, container.Name, newSecret.Name, env.Name)
 
-							c.processPods <- pod
+							restartPod = true
 						}
 					}
+				}
+
+				if val, ok := pod.Annotations["secret-restart-controller/volumes"]; ok && val == "true" {
+					for _, volume := range pod.Spec.Volumes {
+						if volume.Secret != nil && volume.Secret.SecretName == newSecret.Name {
+							// A container in this pod is using a secret that just got updated
+							// We can restart the pod
+
+							glog.Infof("pod %s has volume %s with secret %s", pod.Name, volume.Name, newSecret.Name)
+
+							restartPod = true
+						}
+					}
+				}
+
+				if restartPod {
+					c.processPods <- pod
 				}
 			}
 		},
