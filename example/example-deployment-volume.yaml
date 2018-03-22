@@ -1,0 +1,32 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: restart-on-secret-change
+  name: restart-on-secret-change
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: restart-on-secret-change
+  template:
+    metadata:
+      annotations:
+        secret-restart-controller/restart: "true"
+        secret-restart-controller/volumes: "true"
+      labels:
+        app: restart-on-secret-change
+    spec:
+      containers:
+      - image: kubernetes/pause
+        imagePullPolicy: Always
+        name: pause
+        volumeMounts:
+        - name: foo
+          mountPath: "/secret"
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+      - name: foo
+        secret:
+          secretName: restart-on-secret-change
