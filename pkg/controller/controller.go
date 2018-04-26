@@ -54,7 +54,7 @@ func (c *Controller) restartPods() {
 		case pod := <-c.processPods:
 			glog.Infof("restarting pod %s", pod.Name)
 
-			if err := c.cs.CoreV1().Pods(pod.ObjectMeta.Namespace).Evict(&v1beta1.Eviction{ObjectMeta: v1.ObjectMeta{Name: pod.Name}}); err != nil {
+			if err := c.cs.CoreV1().Pods(pod.ObjectMeta.Namespace).Evict(&v1beta1.Eviction{ObjectMeta: v1.ObjectMeta{Name: pod.Name, Namespace: pod.ObjectMeta.Namespace}}); err != nil {
 				switch err.Error() {
 				case errDisruptionBudget:
 					// If this pod cannot be restarted then it should be queued and restarted after a while
